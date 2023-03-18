@@ -5,15 +5,16 @@ import (
 )
 
 const (
-	AsciiHorizon = ' '
-	AsciiHero    = '@'
-	AsciiPet     = 'd'
-	AsciiHWall   = '-'
-	AsciiVWall   = '|'
-	AsciiDoor    = '+'
-	AsciiFloor   = '.'
-	AsciiZombie  = 'Z'
-	AsciiCorpse  = '%'
+	AsciiHorizon  = ' '
+	AsciiHero     = '@'
+	AsciiPet      = 'd'
+	AsciiHWall    = '-'
+	AsciiVWall    = '|'
+	AsciiDoor     = '+'
+	AsciiFloorLow = '.'
+	AsciiFloor    = '·'
+	AsciiZombie   = 'Z'
+	AsciiCorpse   = '%'
 )
 
 const (
@@ -42,7 +43,7 @@ const (
 	MstZombie = iota
 )
 
-var CorpseStyle = tcell.StyleDefault.Background(tcell.ColorDefault).Foreground(tcell.Color52)
+var CorpseStyle = tcell.StyleDefault.Background(tcell.ColorDefault).Foreground(tcell.Color124)
 
 var MstStyle = map[int]tcell.Style{
 	MstZombie: tcell.StyleDefault.Background(tcell.ColorDefault).Foreground(tcell.Color47),

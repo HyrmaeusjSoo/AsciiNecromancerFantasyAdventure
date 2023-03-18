@@ -28,6 +28,8 @@ func Input(g *Game) {
 			case tcell.KeyUp, tcell.KeyDown, tcell.KeyLeft, tcell.KeyRight,
 				tcell.KeyUpLeft, tcell.KeyUpRight, tcell.KeyDownLeft, tcell.KeyDownRight:
 				g.Turn(ev.Key())
+			default:
+				g.Turn(tcell.Key(ev.Rune()))
 			}
 			g.Graph()
 		case *tcell.EventMouse:

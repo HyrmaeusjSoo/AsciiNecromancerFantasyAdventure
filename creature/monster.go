@@ -11,7 +11,7 @@ type Monster struct {
 func NewMonster(style tcell.Style, x, y int, name rune, typ int) *Monster {
 	return &Monster{
 		Creature{
-			10001,
+			1001,
 			style, name, typ,
 			x, y,
 			0, 0,

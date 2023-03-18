@@ -20,13 +20,13 @@ type Game struct {
 }
 
 func InitGameObject(x, y int) (g Game) {
-	//dp := []DoorPosition{{10, 15}, {20, 15}}
 	msts := []*creature.Monster{
-		creature.NewMonster(global.MstStyle[global.MstZombie], x-x+3, y-y+3, global.AsciiZombie, global.MstZombie),
+		creature.NewMonster(global.MstStyle[global.MstZombie], x-x, y-y, global.AsciiZombie, global.MstZombie),
+		creature.NewMonster(global.MstStyle[global.MstZombie], x-3, y-3, global.AsciiZombie, global.MstZombie),
 	}
 	return Game{
-		At:    creature.NewCharacter(global.CptStyle[global.CptHero], 0, 0, global.AsciiHero, global.CptHero),
-		Pet:   creature.NewCharacter(global.CptStyle[global.CptPet], 0, 1, global.AsciiPet, global.CptPet),
+		At:    creature.NewCharacter(global.CptStyle[global.CptHero], x/2, y/2, global.AsciiHero, global.CptHero),
+		Pet:   creature.NewCharacter(global.CptStyle[global.CptPet], x/2+1, y/2+1, global.AsciiPet, global.CptPet),
 		House: NewHouse(10, 10, 20, 20, []DoorPosition{{10, 15}, {20, 15}}),
 		Msts:  msts,
 	}
@@ -63,7 +63,7 @@ func (g *Game) Turn(act tcell.Key) {
 		tx--
 	case tcell.KeyRight:
 		tx++
-	case tcell.KeyUpLeft:
+	/* case tcell.KeyUpLeft:
 		tx--
 		ty--
 	case tcell.KeyUpRight:
@@ -74,15 +74,25 @@ func (g *Game) Turn(act tcell.Key) {
 		ty++
 	case tcell.KeyDownRight:
 		tx++
-		ty++
+		ty++ */
+	default:
+		if act == 'a' {
+			go g.UseSkill(SKID_CuiDuBiShou)
+		} else if act == 's' {
+			go g.UseSkill(SKID_ShiBao)
+		}
 	}
 	if g.At.TurnRound(tx, ty); CanMove(g.Screen, tx, ty) {
 		g.At.Move(tx, ty)
 	}
-	if ptx, pty, canMove := g.Pet.Creature.TurnRound(tx, ty); canMove && CanMove(g.Screen, ptx, pty) {
+	if ptx, pty, canMove := g.Pet.Creature.TurnRound(tx, ty); canMove {
 		g.Pet.Follow(ptx, pty)
 	}
 	g.turnMstSched()
+}
+
+func (g *Game) UseSkill(sk uint8) {
+	SkillMap[sk](g)
 }
 
 func (g *Game) turnMstSched() {
@@ -105,6 +115,9 @@ func (g *Game) turnMstSched() {
 
 func (g *Game) Graph() {
 	g.Screen.Clear()
+
+	g.House.Draw(g.Screen)
+
 	_, sy := g.Screen.Size()
 	g.DrawText(0, sy-1, "AT:"+strconv.Itoa(g.At.Health))
 	g.DrawText(0, sy-2, "M:"+strconv.Itoa(len(g.Msts))+" C:"+strconv.Itoa(len(g.Corps)))
@@ -134,7 +147,6 @@ func (g *Game) DrawBox(x1, y1, x2, y2 int, text string) {
 		}
 	}
 
-	// Draw borders
 	for col := x1; col <= x2; col++ { //tcell.RuneHLine
 		g.Screen.SetContent(col, y1, '-', nil, g.Style)
 		g.Screen.SetContent(col, y2, '-', nil, g.Style)
@@ -143,14 +155,6 @@ func (g *Game) DrawBox(x1, y1, x2, y2 int, text string) {
 		g.Screen.SetContent(x1, row, '|', nil, g.Style)
 		g.Screen.SetContent(x2, row, '|', nil, g.Style)
 	}
-
-	// Only draw corners if necessary
-	/* if y1 != y2 && x1 != x2 {
-		g.Screen.SetContent(x1, y1, '-', nil, g.Style) //tcell.RuneULCorner
-		g.Screen.SetContent(x2, y1, '-', nil, g.Style) //tcell.RuneURCorner
-		g.Screen.SetContent(x1, y2, '-', nil, g.Style) //tcell.RuneLLCorner
-		g.Screen.SetContent(x2, y2, '-', nil, g.Style) //tcell.RuneLRCorner
-	} */
 
 	g.DrawBoxText(x1+1, y1+1, x2-1, y2-1, text)
 }
@@ -191,11 +195,12 @@ func CanMove(s tcell.Screen, x, y int) bool {
 
 func IsPassable(p rune) bool {
 	_, ok := map[rune]struct{}{
-		global.AsciiHorizon: {},
-		global.AsciiDoor:    {},
-		global.AsciiFloor:   {},
-		global.AsciiCorpse:  {},
-		global.AsciiPet:     {},
+		global.AsciiHorizon:  {},
+		global.AsciiDoor:     {},
+		global.AsciiFloor:    {},
+		global.AsciiFloorLow: {},
+		global.AsciiCorpse:   {},
+		global.AsciiPet:      {},
 	}[p]
 	return ok
 }

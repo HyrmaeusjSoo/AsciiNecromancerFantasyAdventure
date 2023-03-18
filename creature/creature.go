@@ -2,6 +2,7 @@ package creature
 
 import (
 	"math"
+	"time"
 
 	"github.com/gdamore/tcell/v2"
 )
@@ -59,6 +60,14 @@ func (c *Creature) TurnRound(x, y int) (tx, ty int, canMove bool) {
 
 func (c *Creature) Heal(v int) int {
 	c.Health += v
+	if v <= 0 {
+		tmpStyle := c.Style
+		go func() {
+			c.Style = tcell.StyleDefault.Background(tcell.ColorDefault).Foreground(tcell.Color196)
+			time.Sleep(100 * time.Millisecond)
+			c.Style = tmpStyle
+		}()
+	}
 	if c.Health < (c.Max / 20) {
 		c.Style = tcell.StyleDefault.Background(tcell.ColorDefault).Foreground(tcell.Color196)
 	}

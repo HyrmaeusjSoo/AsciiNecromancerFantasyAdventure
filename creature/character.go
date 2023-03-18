@@ -6,18 +6,20 @@ import (
 
 type Character struct {
 	Creature
+	Facing uint8
 }
 
 func NewCharacter(style tcell.Style, x, y int, name rune, typ int) Character {
 	return Character{
 		Creature{
-			1,
+			1001,
 			style, name, typ,
 			x, y,
 			0, 0,
 			100, 100,
 			20,
 		},
+		2,
 	}
 }
 
