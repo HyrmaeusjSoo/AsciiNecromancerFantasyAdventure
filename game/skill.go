@@ -2,7 +2,6 @@ package game
 
 import (
 	"math"
-	"necromancer/creature"
 	"necromancer/global"
 	"time"
 )
@@ -47,9 +46,8 @@ var SkillMap = map[uint8]func(g *Game){
 		if b >= 50 || bk == -1 {
 			return
 		}
-		if hp := g.Msts[bk].Heal(-(g.At.Damage * SKDMG_CuiDuBiShou)); hp <= 1 {
-			g.Corps = append(g.Corps, &creature.Corpse{Id: 10001, Style: global.CorpseStyle, Name: global.AsciiCorpse, Type: global.MstZombie, X: int(tx), Y: int(ty)})
-			g.Msts = append(g.Msts[:bk], g.Msts[bk+1:]...)
+		if hp := g.Msts[bk].Heal(-(g.At.Damage * SKDMG_CuiDuBiShou)); hp <= 0 {
+			g.MstDeath(bk)
 		}
 
 		step := math.Max(math.Abs(ax-tx), math.Abs(ay-ty))
@@ -59,11 +57,8 @@ var SkillMap = map[uint8]func(g *Game){
 		for i := 1; i < int(step); i++ {
 			x += increX
 			y += increY
-			if x == tx-increX && y == ty-increY {
-				g.Screen.SetContent(int(x+0.5), int(y+0.5), '*', nil, g.Style)
-			} else {
-				g.Screen.SetContent(int(x+0.5), int(y+0.5), '·', nil, g.Style)
-			}
+			w := global.IfElse(x == tx-increX && y == ty-increY, '*', '·')
+			g.Screen.SetContent(int(x+0.5), int(y+0.5), w, nil, g.Style)
 		}
 		g.Screen.Show()
 	},
@@ -101,9 +96,8 @@ var SkillMap = map[uint8]func(g *Game){
 			if !(v.X >= x1 && v.X <= x2 && v.Y >= y1 && v.Y <= y2) {
 				continue
 			}
-			if hp := v.Heal(-(g.At.Damage * SKDMG_ShiBao)); hp <= 1 {
-				g.Corps = append(g.Corps, &creature.Corpse{Id: 10001, Style: global.CorpseStyle, Name: global.AsciiCorpse, Type: global.MstZombie, X: v.X, Y: v.Y})
-				g.Msts = append(g.Msts[:k], g.Msts[k+1:]...)
+			if hp := v.Heal(-(g.At.Damage * SKDMG_ShiBao)); hp <= 0 {
+				g.MstDeath(k)
 			}
 		}
 
@@ -117,11 +111,8 @@ var SkillMap = map[uint8]func(g *Game){
 		time.Sleep(100 * time.Millisecond)
 		for row := y1; row <= y2; row++ {
 			for col := x1; col <= x2; col++ {
-				if row >= y-1 && row <= y+1 && col >= x-1 && col <= x+1 {
-					scr.SetContent(col, row, '*', nil, g.Style)
-				} else {
-					scr.SetContent(col, row, '·', nil, g.Style)
-				}
+				w := global.IfElse(row >= y-1 && row <= y+1 && col >= x-1 && col <= x+1, '*', '·')
+				scr.SetContent(col, row, w, nil, g.Style)
 			}
 		}
 		scr.SetContent(x, y, '%', nil, global.CorpseStyle)
@@ -129,11 +120,8 @@ var SkillMap = map[uint8]func(g *Game){
 		time.Sleep(100 * time.Millisecond)
 		for row := y1; row <= y2; row++ {
 			for col := x1; col <= x2; col++ {
-				if row == y1 || row == y2 || col == x1 || col == x2 {
-					scr.SetContent(col, row, '*', nil, g.Style)
-				} else {
-					scr.SetContent(col, row, '~', nil, g.Style)
-				}
+				w := global.IfElse(row == y1 || row == y2 || col == x1 || col == x2, '*', '~')
+				scr.SetContent(col, row, w, nil, g.Style)
 			}
 		}
 		scr.Show()

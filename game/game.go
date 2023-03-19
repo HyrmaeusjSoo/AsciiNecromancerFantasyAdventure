@@ -1,9 +1,11 @@
 package game
 
 import (
+	"math/rand"
 	"necromancer/creature"
 	"necromancer/global"
 	"strconv"
+	"time"
 
 	"github.com/gdamore/tcell/v2"
 )
@@ -17,12 +19,13 @@ type Game struct {
 	House  House
 	Msts   []*creature.Monster
 	Corps  []*creature.Corpse
+	Scores int
 }
 
 func InitGameObject(x, y int) (g Game) {
 	msts := []*creature.Monster{
 		creature.NewMonster(global.MstStyle[global.MstZombie], x-x, y-y, global.AsciiZombie, global.MstZombie),
-		creature.NewMonster(global.MstStyle[global.MstZombie], x-3, y-3, global.AsciiZombie, global.MstZombie),
+		creature.NewMonster(global.MstStyle[global.MstZombie], x-3, y-4, global.AsciiZombie, global.MstZombie),
 	}
 	return Game{
 		At:    creature.NewCharacter(global.CptStyle[global.CptHero], x/2, y/2, global.AsciiHero, global.CptHero),
@@ -49,6 +52,7 @@ func NewGame() *Game {
 	game := InitGameObject(s.Size())
 	game.Screen = s
 	game.Style = defStyle
+	game.Scores = 0
 	return &game
 }
 
@@ -82,46 +86,79 @@ func (g *Game) Turn(act tcell.Key) {
 			go g.UseSkill(SKID_ShiBao)
 		}
 	}
-	if g.At.TurnRound(tx, ty); CanMove(g.Screen, tx, ty) {
-		g.At.Move(tx, ty)
-	}
-	if ptx, pty, canMove := g.Pet.Creature.TurnRound(tx, ty); canMove {
-		g.Pet.Follow(ptx, pty)
-	}
-	g.turnMstSched()
+
+	g.turnSched(tx, ty)
 }
 
 func (g *Game) UseSkill(sk uint8) {
 	SkillMap[sk](g)
 }
 
-func (g *Game) turnMstSched() {
+func (g *Game) turnSched(tx, ty int) {
+	if g.At.TurnRound(tx, ty); CanMove(g.Screen, tx, ty) {
+		g.At.Move(tx, ty)
+	}
+	if ptx, pty, canMove := g.Pet.Creature.TurnRound(tx, ty); canMove {
+		g.Pet.Follow(ptx, pty)
+	}
 	for k, v := range g.Msts {
 		if mtx, mty, canMove := v.TurnRound(g.At.Tx, g.At.Ty); canMove && CanMove(g.Screen, mtx, mty) {
 			v.Move(mtx, mty)
 		}
 		if v.X == g.At.Tx && v.Y == g.At.Ty {
-			if hp := v.Heal(-g.At.Damage); hp <= 1 {
-				g.Corps = append(g.Corps, &creature.Corpse{Id: 10001, Style: global.CorpseStyle, Name: global.AsciiCorpse, Type: global.MstZombie, X: v.X, Y: v.Y})
-				g.Msts = append(g.Msts[:k], g.Msts[k+1:]...)
+			if hp := v.Heal(-g.At.Damage); hp <= 0 {
+				g.MstDeath(k)
 				continue
 			}
 		}
 		if v.Tx == g.At.X && v.Ty == g.At.Y {
-			g.At.Heal(-v.Damage)
+			if hp := g.At.Heal(-v.Damage); hp <= 0 {
+				g.Screen.Clear()
+				g.DrawText(tx, ty, "Necromancer shuld know what is death")
+				g.Screen.Show()
+				time.Sleep(5 * time.Second)
+			}
 		}
 	}
+	if len(g.Msts) < 2 {
+		g.GenerateMst()
+	}
+}
+
+/*
+s(0x, ny)
+s(mx, ny)
+s(0y, nx)
+s(my, nx)
+*/
+func (g *Game) GenerateMst() {
+	mx, my := g.Screen.Size()
+	mx, my = mx-1, my-4
+	x, y := 0, 0
+	if rand.Intn(4) < 2 {
+		x = []int{0, mx}[rand.Intn(2)]
+		y = rand.Intn(my)
+	} else {
+		x = rand.Intn(mx)
+		y = []int{0, my}[rand.Intn(2)]
+	}
+	g.Msts = append(g.Msts, creature.NewMonster(global.MstStyle[global.MstZombie], x, y, global.AsciiZombie, global.MstZombie))
+}
+
+func (g *Game) MstDeath(i int) {
+	if len(g.Msts) < (i+1) || g.Msts == nil {
+		return
+	}
+	g.Corps = append(g.Corps, &creature.Corpse{Id: 10001, Style: global.CorpseStyle, Name: global.AsciiCorpse, Type: global.MstZombie, X: g.Msts[i].X, Y: g.Msts[i].Y})
+	g.Msts = append(g.Msts[:i], g.Msts[i+1:]...)
+	g.Scores += 1
 }
 
 func (g *Game) Graph() {
 	g.Screen.Clear()
+	g.StateBox()
 
-	g.House.Draw(g.Screen)
-
-	_, sy := g.Screen.Size()
-	g.DrawText(0, sy-1, "AT:"+strconv.Itoa(g.At.Health))
-	g.DrawText(0, sy-2, "M:"+strconv.Itoa(len(g.Msts))+" C:"+strconv.Itoa(len(g.Corps)))
-
+	// g.House.Draw(g.Screen)
 	for _, v := range g.Corps {
 		v.Draw(g.Screen)
 	}
@@ -129,6 +166,18 @@ func (g *Game) Graph() {
 	g.At.Draw(g.Screen)
 	for _, v := range g.Msts {
 		v.Draw(g.Screen)
+	}
+}
+
+func (g *Game) StateBox() {
+	sx, sy := g.Screen.Size()
+	for i := 0; i < sx; i++ {
+		g.Screen.SetContent(i, sy-3, tcell.RuneHLine, nil, g.Style)
+	}
+	g.DrawText(0, sy-2, "AT:"+strconv.Itoa(g.At.Health))
+	g.DrawText(0, sy-1, "M:"+strconv.Itoa(len(g.Msts))+" C:"+strconv.Itoa(len(g.Corps))+" S:"+strconv.Itoa(g.Scores))
+	for k, v := range g.Msts {
+		g.DrawText(60, sy-(1+k), strconv.Itoa(k)+":"+strconv.Itoa(v.X)+","+strconv.Itoa(v.Y))
 	}
 }
 
@@ -175,8 +224,8 @@ func (g *Game) DrawBoxText(x1, y1, x2, y2 int, text string) {
 }
 
 func (g *Game) DrawText(x, y int, text string) {
-	for i := x; i < len(text); i++ {
-		g.Screen.SetContent(i, y, rune(text[i]), nil, g.Style)
+	for i := 0; i < len(text); i++ {
+		g.Screen.SetContent(x+i, y, rune(text[i]), nil, g.Style)
 	}
 }
 

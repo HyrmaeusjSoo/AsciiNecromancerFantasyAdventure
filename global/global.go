@@ -48,3 +48,11 @@ var CorpseStyle = tcell.StyleDefault.Background(tcell.ColorDefault).Foreground(t
 var MstStyle = map[int]tcell.Style{
 	MstZombie: tcell.StyleDefault.Background(tcell.ColorDefault).Foreground(tcell.Color47),
 }
+
+func IfElse[T any](exp bool, trueValue, falseValue T) T {
+	if exp {
+		return trueValue
+	} else {
+		return falseValue
+	}
+}
