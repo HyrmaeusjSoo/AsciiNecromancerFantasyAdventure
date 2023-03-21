@@ -4,9 +4,16 @@ import (
 	"github.com/gdamore/tcell/v2"
 )
 
+type Status struct {
+	Exp    int
+	MaxExp int
+	Level  uint8
+	Skill  map[uint8]int
+}
+
 type Character struct {
 	Creature
-	Facing uint8
+	Status
 }
 
 func NewCharacter(style tcell.Style, x, y int, name rune, typ int) Character {
@@ -19,7 +26,12 @@ func NewCharacter(style tcell.Style, x, y int, name rune, typ int) Character {
 			100, 100,
 			20,
 		},
-		2,
+		Status{
+			0, 100, 1,
+			map[uint8]int{
+				1: 0, 2: 0, 3: 0, 4: 0,
+			},
+		},
 	}
 }
 
@@ -57,4 +69,16 @@ func (c *Character) Follow(x, y int) {
 	// }
 }
 
-func (c *Character) Attack(x, y int) {}
+func (c *Character) AddExp(n int) bool {
+	c.Exp += n
+	if c.Exp >= c.MaxExp {
+		c.LevelUp()
+		c.Exp -= c.MaxExp
+		return true
+	}
+	return false
+}
+
+func (c *Character) LevelUp() {
+	c.Level++
+}

@@ -4,16 +4,74 @@ import (
 	"math"
 	"necromancer/global"
 	"time"
+
+	"github.com/gdamore/tcell/v2"
 )
 
 const (
 	SKID_CuiDuBiShou uint8 = iota + 1
 	SKID_ShiBao
+	SKID_Temp
+	SKID_FaZhen
+
 	SKDMG_CuiDuBiShou = 1
 	SKDMG_ShiBao      = 2
+	SKDMG_Temp        = 0
+	SKDMG_FaZhen      = 0
+
+	SKMAXLevel = 4
 )
 
-var SkillMap = map[uint8]func(g *Game){
+type Skill struct {
+	Current uint8
+	Skills  map[uint8]string
+}
+
+func NewSkill() Skill {
+	return Skill{
+		0,
+		map[uint8]string{
+			SKID_CuiDuBiShou: "a. Cui Du Bi Shou",
+			SKID_ShiBao:      "s. Shi Bao",
+			SKID_Temp:        "d. Temp",
+			SKID_FaZhen:      "f. Fa Zhen",
+		},
+	}
+}
+
+func (s *Skill) Select(g *Game, key tcell.Key) {
+	switch key {
+	case tcell.KeyUp:
+		s.Current = global.IfElse(s.Current <= 1, uint8(len(s.Skills)), s.Current-1)
+	case tcell.KeyDown:
+		s.Current = global.IfElse(s.Current >= uint8(len(s.Skills)), 1, s.Current+1)
+	case tcell.KeyEnter:
+		if s.Current == 0 {
+			return
+		}
+		if g.At.Skill[s.Current] >= SKMAXLevel {
+			return
+		}
+		g.At.Skill[s.Current]++
+		g.Focus = global.FocusPlay
+	}
+	s.SelectAnime(g)
+}
+
+func (s *Skill) SelectAnime(g *Game) {
+	sx, sy := g.Screen.Size()
+	sx, sy = sx-1, sy-4
+	x1, y1 := sx/3, sy/3
+	x2, y2 := x1*2, y1*2
+	g.DrawBox(x1, y1, x2, y2, "")
+	for k, v := range s.Skills {
+		style := global.IfElse(s.Current == k, tcell.StyleDefault.Background(tcell.ColorReset).Foreground(tcell.Color202), g.Style)
+		g.DrawText(x1+1, y1+int(k), v, style)
+	}
+	g.Screen.Show()
+}
+
+var SkillFunc = map[uint8]func(g *Game){
 	/*
 		1 2 3 4 5 6 7 8 9 10
 		2

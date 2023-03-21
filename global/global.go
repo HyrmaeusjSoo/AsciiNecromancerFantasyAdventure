@@ -5,6 +5,11 @@ import (
 )
 
 const (
+	FocusPlay uint8 = iota
+	FocusSkillBox
+)
+
+const (
 	AsciiHorizon  = ' '
 	AsciiHero     = '@'
 	AsciiPet      = 'd'

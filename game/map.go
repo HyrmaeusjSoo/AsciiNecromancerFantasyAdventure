@@ -29,19 +29,19 @@ func (h *House) Draw(s tcell.Screen) {
 	if h.x2 < h.x1 {
 		h.x1, h.x2 = h.x2, h.x1
 	}
-	//填充地板
+	//地板
 	for row := h.y1; row <= h.y2; row++ {
 		for col := h.x1; col < h.x2; col++ {
 			s.SetContent(col, row, '·', nil, global.MapStyle[global.MapFloor])
 		}
 	}
 	//横墙
-	for col := h.x1; col <= h.x2; col++ { //tcell.RuneHLine
+	for col := h.x1; col <= h.x2; col++ {
 		s.SetContent(col, h.y1, tcell.RuneHLine, nil, h.style)
 		s.SetContent(col, h.y2, tcell.RuneHLine, nil, h.style)
 	}
 	//竖墙
-	for row := h.y1 + 1; row < h.y2; row++ { //tcell.RuneVLine
+	for row := h.y1 + 1; row < h.y2; row++ {
 		s.SetContent(h.x1, row, tcell.RuneVLine, nil, h.style)
 		s.SetContent(h.x2, row, tcell.RuneVLine, nil, h.style)
 	}

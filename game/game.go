@@ -5,6 +5,7 @@ import (
 	"necromancer/creature"
 	"necromancer/global"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gdamore/tcell/v2"
@@ -14,12 +15,14 @@ type Game struct {
 	//maximum int
 	Screen tcell.Screen
 	Style  tcell.Style
+	Focus  uint8
 	At     creature.Character
 	Pet    creature.Character
 	House  House
 	Msts   []*creature.Monster
 	Corps  []*creature.Corpse
 	Scores int
+	SK     Skill
 }
 
 func InitGameObject(x, y int) (g Game) {
@@ -28,10 +31,13 @@ func InitGameObject(x, y int) (g Game) {
 		creature.NewMonster(global.MstStyle[global.MstZombie], x-3, y-4, global.AsciiZombie, global.MstZombie),
 	}
 	return Game{
-		At:    creature.NewCharacter(global.CptStyle[global.CptHero], x/2, y/2, global.AsciiHero, global.CptHero),
-		Pet:   creature.NewCharacter(global.CptStyle[global.CptPet], x/2+1, y/2+1, global.AsciiPet, global.CptPet),
-		House: NewHouse(10, 10, 20, 20, []DoorPosition{{10, 15}, {20, 15}}),
-		Msts:  msts,
+		Focus:  global.FocusPlay,
+		At:     creature.NewCharacter(global.CptStyle[global.CptHero], x/2, y/2, global.AsciiHero, global.CptHero),
+		Pet:    creature.NewCharacter(global.CptStyle[global.CptPet], x/2+1, y/2+1, global.AsciiPet, global.CptPet),
+		House:  NewHouse(10, 10, 20, 20, []DoorPosition{{10, 15}, {20, 15}}),
+		Msts:   msts,
+		Scores: 0,
+		SK:     NewSkill(),
 	}
 }
 
@@ -52,46 +58,44 @@ func NewGame() *Game {
 	game := InitGameObject(s.Size())
 	game.Screen = s
 	game.Style = defStyle
-	game.Scores = 0
 	return &game
 }
 
 func (g *Game) Turn(act tcell.Key) {
-	tx, ty := g.At.X, g.At.Y
-	switch act {
-	case tcell.KeyUp:
-		ty--
-	case tcell.KeyDown:
-		ty++
-	case tcell.KeyLeft:
-		tx--
-	case tcell.KeyRight:
-		tx++
-	/* case tcell.KeyUpLeft:
-		tx--
-		ty--
-	case tcell.KeyUpRight:
-		tx++
-		ty--
-	case tcell.KeyDownLeft:
-		tx--
-		ty++
-	case tcell.KeyDownRight:
-		tx++
-		ty++ */
-	default:
-		if act == 'a' {
-			go g.UseSkill(SKID_CuiDuBiShou)
-		} else if act == 's' {
-			go g.UseSkill(SKID_ShiBao)
+	if g.Focus == global.FocusPlay {
+		tx, ty := g.At.X, g.At.Y
+		switch act {
+		case tcell.KeyUp:
+			ty--
+		case tcell.KeyDown:
+			ty++
+		case tcell.KeyLeft:
+			tx--
+		case tcell.KeyRight:
+			tx++
+		default:
+			if act == 'a' {
+				go g.UseSkill(SKID_CuiDuBiShou)
+			} else if act == 's' {
+				go g.UseSkill(SKID_ShiBao)
+			} else if act == 'd' {
+				go g.UseSkill(SKID_Temp)
+			} else if act == 'f' {
+				go g.UseSkill(SKID_FaZhen)
+			}
 		}
+		g.turnSched(tx, ty)
+		g.Graph()
+	} else if g.Focus == global.FocusSkillBox {
+		g.SK.Select(g, act)
 	}
 
-	g.turnSched(tx, ty)
 }
 
-func (g *Game) UseSkill(sk uint8) {
-	SkillMap[sk](g)
+func (g *Game) UseSkill(skid uint8) {
+	if g.At.Skill[skid] > 0 {
+		SkillFunc[skid](g)
+	}
 }
 
 func (g *Game) turnSched(tx, ty int) {
@@ -114,7 +118,7 @@ func (g *Game) turnSched(tx, ty int) {
 		if v.Tx == g.At.X && v.Ty == g.At.Y {
 			if hp := g.At.Heal(-v.Damage); hp <= 0 {
 				g.Screen.Clear()
-				g.DrawText(tx, ty, "Necromancer shuld know what is death")
+				g.DrawText(tx, ty, "Necromancer shuld know what is death", g.Style)
 				g.Screen.Show()
 				time.Sleep(5 * time.Second)
 			}
@@ -152,6 +156,17 @@ func (g *Game) MstDeath(i int) {
 	g.Corps = append(g.Corps, &creature.Corpse{Id: 10001, Style: global.CorpseStyle, Name: global.AsciiCorpse, Type: global.MstZombie, X: g.Msts[i].X, Y: g.Msts[i].Y})
 	g.Msts = append(g.Msts[:i], g.Msts[i+1:]...)
 	g.Scores += 1
+	lvUp := g.At.AddExp(40)
+	if lvUp {
+		maxLv := 0
+		for _, v := range g.At.Skill {
+			maxLv += v
+		}
+		if maxLv < SKMAXLevel*4 {
+			g.Focus = global.FocusSkillBox
+			g.SK.Select(g, tcell.KeyDown)
+		}
+	}
 }
 
 func (g *Game) Graph() {
@@ -174,10 +189,34 @@ func (g *Game) StateBox() {
 	for i := 0; i < sx; i++ {
 		g.Screen.SetContent(i, sy-3, tcell.RuneHLine, nil, g.Style)
 	}
-	g.DrawText(0, sy-2, "AT:"+strconv.Itoa(g.At.Health))
-	g.DrawText(0, sy-1, "M:"+strconv.Itoa(len(g.Msts))+" C:"+strconv.Itoa(len(g.Corps))+" S:"+strconv.Itoa(g.Scores))
+	var at strings.Builder
+	at.WriteString("AT:")
+	at.WriteString(strconv.Itoa(g.At.Health))
+	at.WriteString(" A:")
+	at.WriteString(strconv.Itoa(g.At.Skill[SKID_CuiDuBiShou]))
+	at.WriteString(" S:")
+	at.WriteString(strconv.Itoa(g.At.Skill[SKID_ShiBao]))
+	at.WriteString(" D:")
+	at.WriteString(strconv.Itoa(g.At.Skill[SKID_Temp]))
+	at.WriteString(" F:")
+	at.WriteString(strconv.Itoa(g.At.Skill[SKID_FaZhen]))
+	g.DrawText(0, sy-2, at.String(), g.Style)
+	var ms strings.Builder
+	ms.WriteString("M:")
+	ms.WriteString(strconv.Itoa(len(g.Msts)))
+	ms.WriteString(" C:")
+	ms.WriteString(strconv.Itoa(len(g.Corps)))
+	ms.WriteString(" S:")
+	ms.WriteString(strconv.Itoa(g.Scores))
+	g.DrawText(0, sy-1, ms.String(), g.Style)
 	for k, v := range g.Msts {
-		g.DrawText(60, sy-(1+k), strconv.Itoa(k)+":"+strconv.Itoa(v.X)+","+strconv.Itoa(v.Y))
+		var mstb strings.Builder
+		mstb.WriteString(strconv.Itoa(k))
+		mstb.WriteString(":")
+		mstb.WriteString(strconv.Itoa(v.X))
+		mstb.WriteString(",")
+		mstb.WriteString(strconv.Itoa(v.Y))
+		g.DrawText(sx/2, sy-(1+k), mstb.String(), g.Style)
 	}
 }
 
@@ -196,13 +235,19 @@ func (g *Game) DrawBox(x1, y1, x2, y2 int, text string) {
 		}
 	}
 
-	for col := x1; col <= x2; col++ { //tcell.RuneHLine
-		g.Screen.SetContent(col, y1, '-', nil, g.Style)
-		g.Screen.SetContent(col, y2, '-', nil, g.Style)
+	for col := x1; col <= x2; col++ {
+		g.Screen.SetContent(col, y1, tcell.RuneHLine, nil, g.Style)
+		g.Screen.SetContent(col, y2, tcell.RuneHLine, nil, g.Style)
 	}
-	for row := y1 + 1; row < y2; row++ { //tcell.RuneVLine
-		g.Screen.SetContent(x1, row, '|', nil, g.Style)
-		g.Screen.SetContent(x2, row, '|', nil, g.Style)
+	for row := y1 + 1; row < y2; row++ {
+		g.Screen.SetContent(x1, row, tcell.RuneVLine, nil, g.Style)
+		g.Screen.SetContent(x2, row, tcell.RuneVLine, nil, g.Style)
+	}
+	if y1 != y2 && x1 != x2 {
+		g.Screen.SetContent(x1, y1, tcell.RuneULCorner, nil, g.Style)
+		g.Screen.SetContent(x2, y1, tcell.RuneURCorner, nil, g.Style)
+		g.Screen.SetContent(x1, y2, tcell.RuneLLCorner, nil, g.Style)
+		g.Screen.SetContent(x2, y2, tcell.RuneLRCorner, nil, g.Style)
 	}
 
 	g.DrawBoxText(x1+1, y1+1, x2-1, y2-1, text)
@@ -223,9 +268,12 @@ func (g *Game) DrawBoxText(x1, y1, x2, y2 int, text string) {
 	}
 }
 
-func (g *Game) DrawText(x, y int, text string) {
+func (g *Game) DrawText(x, y int, text string, style tcell.Style) {
+	if style == (tcell.Style{}) {
+		style = g.Style
+	}
 	for i := 0; i < len(text); i++ {
-		g.Screen.SetContent(x+i, y, rune(text[i]), nil, g.Style)
+		g.Screen.SetContent(x+i, y, rune(text[i]), nil, style)
 	}
 }
 

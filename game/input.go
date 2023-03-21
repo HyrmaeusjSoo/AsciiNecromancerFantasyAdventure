@@ -9,13 +9,10 @@ import (
 func Input(g *Game) {
 	ox, oy := -1, -1
 	for {
-		// Update screen
 		g.Screen.Show()
 
-		// Poll event
 		ev := g.Screen.PollEvent()
 
-		// Process event
 		switch ev := ev.(type) {
 		case *tcell.EventResize:
 			g.Screen.Sync()
@@ -31,13 +28,12 @@ func Input(g *Game) {
 			default:
 				g.Turn(tcell.Key(ev.Rune()))
 			}
-			g.Graph()
 		case *tcell.EventMouse:
 			x, y := ev.Position()
 			switch ev.Buttons() {
 			case tcell.Button1, tcell.Button2:
 				if ox < 0 {
-					ox, oy = x, y // record location when click started
+					ox, oy = x, y
 				}
 			case tcell.ButtonNone:
 				if ox >= 0 {
