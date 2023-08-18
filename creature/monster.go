@@ -1,6 +1,8 @@
 package creature
 
 import (
+	"time"
+
 	"github.com/gdamore/tcell/v2"
 )
 
@@ -11,7 +13,7 @@ type Monster struct {
 func NewMonster(style tcell.Style, x, y int, name rune, typ int) *Monster {
 	return &Monster{
 		Creature{
-			1001,
+			int(time.Now().UnixMilli()),
 			style, name, typ,
 			x, y,
 			0, 0,

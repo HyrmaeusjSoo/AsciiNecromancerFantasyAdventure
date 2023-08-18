@@ -1,17 +1,18 @@
 package main
 
-import "necromancer/game"
+import (
+	"necromancer/game"
+)
 
 func main() {
 	g := game.NewGame()
-	g.Graph()
 	defer func() {
-		maybePanic := recover()
 		g.Screen.Fini()
-		if maybePanic != nil {
-			panic(maybePanic)
+		if maybe := recover(); maybe != nil {
+			panic(maybe)
 		}
 	}()
 
+	g.Graph()
 	game.Input(g)
 }

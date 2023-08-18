@@ -58,3 +58,36 @@ func (h *House) Draw(s tcell.Screen) {
 		s.SetContent(p.x, p.y, '+', nil, h.style)
 	}
 }
+
+func CanMove(s tcell.Screen, x, y int) bool {
+	//超出屏幕
+	sx, sy := s.Size()
+	if x < 0 || y < 0 || x >= sx || y >= sy {
+		return false
+	}
+	//碰撞
+	if mainc, _, _, _ := s.GetContent(x, y); !IsPassable(mainc) {
+		return false
+	}
+	return true
+}
+
+func IsPassable(p rune) bool {
+	_, ok := map[rune]struct{}{
+		global.AsciiHorizon:  {},
+		global.AsciiDoor:     {},
+		global.AsciiFloor:    {},
+		global.AsciiFloorLow: {},
+		global.AsciiCorpse:   {},
+		global.AsciiPet:      {},
+	}[p]
+	return ok
+}
+
+func IsObstacle(p rune) bool {
+	_, ok := map[rune]struct{}{
+		global.AsciiHWall: {},
+		global.AsciiVWall: {},
+	}[p]
+	return ok
+}

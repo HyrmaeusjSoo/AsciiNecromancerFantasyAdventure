@@ -191,4 +191,21 @@ var SkillFunc = map[uint8]func(g *Game){
 		}
 		scr.Show()
 	},
+
+	/*
+		        ..  ....  ..
+		     ..              ..
+		   ..                  ..
+		  ..                    ..
+		 ..                      ..
+		..                        ..
+		 ..                      ..
+		  ..                    ..
+		   ..                  ..
+		     ..              ..
+		        ..  ....  ..
+	*/
+	SKID_FaZhen: func(g *Game) {
+
+	},
 }
