@@ -2,20 +2,23 @@ package creature
 
 import (
 	"math"
+	"necromancer/global"
 	"time"
 
 	"github.com/gdamore/tcell/v2"
 )
 
 type Creature struct {
-	Id          int
-	Style       tcell.Style
-	Name        rune
-	Type        int
-	X, Y        int
-	Tx, Ty      int
-	Max, Health int
-	Damage      int
+	Id           int
+	Style        tcell.Style
+	Name         rune
+	Type         int
+	Level        uint8
+	X, Y         int
+	Tx, Ty       int
+	Max, Health  int
+	Damage       int
+	LastAttacked int
 }
 
 func (c *Creature) Draw(s tcell.Screen) {
@@ -58,19 +61,35 @@ func (c *Creature) TurnRound(x, y int) (tx, ty int, canMove bool) {
 	return
 }
 
+func (c *Creature) HitDamage() int {
+	n := int(math.Ceil(float64(c.Level) / 2))
+	ar := global.AttackRoll()
+	if ar == 1 {
+		return 0
+	}
+	if ar == 20 {
+		n *= 2
+	}
+	return global.Roll(n, c.Damage)
+}
+
 func (c *Creature) Heal(v int) int {
 	c.Health += v
+	if c.Health > c.Max {
+		c.Health = c.Max
+	}
 	if v <= 0 {
 		tmpStyle := c.Style
 		go func() {
 			c.Style = tcell.StyleDefault.Background(tcell.ColorDefault).Foreground(tcell.Color196)
-			time.Sleep(100 * time.Millisecond)
+			time.Sleep(500 * time.Millisecond)
 			c.Style = tmpStyle
 		}()
 	}
 	if c.Health < (c.Max / 20) {
 		c.Style = tcell.StyleDefault.Background(tcell.ColorDefault).Foreground(tcell.Color196)
 	}
+	c.LastAttacked = v
 	return c.Health
 }
 

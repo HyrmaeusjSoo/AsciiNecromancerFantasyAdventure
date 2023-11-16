@@ -1,6 +1,7 @@
 package creature
 
 import (
+	"necromancer/global"
 	"time"
 
 	"github.com/gdamore/tcell/v2"
@@ -9,8 +10,8 @@ import (
 type Status struct {
 	Exp    int
 	MaxExp int
-	Level  uint8
 	Skill  map[uint8]int
+	Coins  int
 }
 
 type Character struct {
@@ -22,17 +23,19 @@ func NewCharacter(style tcell.Style, x, y int, name rune, typ int) Character {
 	return Character{
 		Creature{
 			int(time.Now().UnixMilli()),
-			style, name, typ,
+			style, name, typ, 1,
 			x, y,
 			0, 0,
-			100, 100,
-			20,
+			global.CptAttr[typ].MaxHealth, global.CptAttr[typ].MaxHealth,
+			global.CptAttr[typ].Damage,
+			0,
 		},
 		Status{
-			0, 100, 1,
+			0, global.CptAttr[typ].MaxExp,
 			map[uint8]int{
 				1: 0, 2: 0, 3: 0, 4: 0,
 			},
+			0,
 		},
 	}
 }
@@ -82,5 +85,11 @@ func (c *Character) AddExp(n int) bool {
 }
 
 func (c *Character) LevelUp() {
+	if c.Level >= 20 {
+		return
+	}
 	c.Level++
+	c.Damage++
+	c.Max += 10
+	c.MaxExp += 10
 }

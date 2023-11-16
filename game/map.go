@@ -80,6 +80,9 @@ func IsPassable(p rune) bool {
 		global.AsciiFloorLow: {},
 		global.AsciiCorpse:   {},
 		global.AsciiPet:      {},
+		global.AsciiCoin:     {},
+		global.AsciiPotion:   {},
+		global.AsciiPack:     {},
 	}[p]
 	return ok
 }

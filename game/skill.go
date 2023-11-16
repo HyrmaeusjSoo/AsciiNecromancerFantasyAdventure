@@ -14,37 +14,48 @@ const (
 	SKID_Temp
 	SKID_FaZhen
 
-	SKDMG_CuiDuBiShou = 1
-	SKDMG_ShiBao      = 2
-	SKDMG_Temp        = 0
-	SKDMG_FaZhen      = 0
-
 	SKMAXLevel = 4
 )
 
+type Spell struct {
+	Id       uint8
+	Name     string
+	Cast     int
+	Dice     int
+	HighCast int
+	HighDice int
+}
+
 type Skill struct {
 	Current uint8
-	Skills  map[uint8]string
+	Skills  map[uint8]Spell
 }
 
 func NewSkill() Skill {
 	return Skill{
 		0,
-		map[uint8]string{
-			SKID_CuiDuBiShou: "a. Cui Du Bi Shou",
-			SKID_ShiBao:      "s. Shi Bao",
-			SKID_Temp:        "d. Temp",
-			SKID_FaZhen:      "f. Fa Zhen",
+		map[uint8]Spell{
+			SKID_CuiDuBiShou: Spell{SKID_CuiDuBiShou, "a. Cui Du Bi Shou (2d10 up 1d10)",
+				2, 10, 1, 10},
+			SKID_ShiBao: Spell{SKID_ShiBao, "s. Shi Bao (8d6 up 2d6)",
+				8, 6, 2, 6},
+			SKID_Temp: Spell{SKID_Temp, "d. Temp",
+				0, 0, 0, 0},
+			SKID_FaZhen: Spell{SKID_FaZhen, "f. Fa Zhen",
+				0, 0, 0, 0},
 		},
 	}
 }
 
 func (s *Skill) Select(g *Game, key tcell.Key) {
+	showAnime := true
 	switch key {
 	case tcell.KeyUp:
 		s.Current = global.IfElse(s.Current <= 1, uint8(len(s.Skills)), s.Current-1)
 	case tcell.KeyDown:
 		s.Current = global.IfElse(s.Current >= uint8(len(s.Skills)), 1, s.Current+1)
+	case tcell.KeyClear:
+		s.Current = 1
 	case tcell.KeyEnter:
 		if s.Current == 0 {
 			return
@@ -54,21 +65,38 @@ func (s *Skill) Select(g *Game, key tcell.Key) {
 		}
 		g.At.Skill[s.Current]++
 		g.Focus = global.FocusPlay
+		g.Graph()
+		showAnime = false
 	}
-	s.SelectAnime(g)
+	if showAnime {
+		s.SelectAnime(g)
+	}
 }
 
 func (s *Skill) SelectAnime(g *Game) {
 	sx, sy := g.Screen.Size()
-	sx, sy = sx-1, sy-4
+	sx, sy = sx-1, sy-3
 	x1, y1 := sx/3, sy/3
-	x2, y2 := x1*2, y1*2
+	x2, y2 := x1*2, y1+len(s.Skills)+1 //y1*2
 	g.DrawBox(x1, y1, x2, y2, "")
 	for k, v := range s.Skills {
 		style := global.IfElse(s.Current == k, tcell.StyleDefault.Background(tcell.ColorReset).Foreground(tcell.Color202), g.Style)
-		g.DrawText(x1+1, y1+int(k), v, style)
+		g.DrawText(x1+1, y1+int(k), v.Name, style)
 	}
 	g.Screen.Show()
+}
+
+func spellDamage(spell Spell, lv int) int {
+	ar := global.AttackRoll()
+	if ar == 1 {
+		return 0
+	}
+	if ar == 20 {
+		spell.Cast *= 2
+	}
+	dmg := global.Roll(spell.Cast, spell.Dice)
+	dmg += global.Roll((lv-1)*spell.HighCast, spell.HighDice)
+	return dmg
 }
 
 var SkillFunc = map[uint8]func(g *Game){
@@ -91,8 +119,7 @@ var SkillFunc = map[uint8]func(g *Game){
 		var (
 			ax, ay = float64(g.At.X), float64(g.At.Y)
 			tx, ty float64
-			b      float64 = 50
-			bk     int     = -1
+			b, bk  = 50.0, -1
 		)
 		for k, v := range g.Msts {
 			a := math.Abs(float64(v.X)-ax) + math.Abs(float64(v.Y)-ay)
@@ -104,7 +131,8 @@ var SkillFunc = map[uint8]func(g *Game){
 		if b >= 50 || bk == -1 {
 			return
 		}
-		if hp := g.Msts[bk].Heal(-(g.At.Damage * SKDMG_CuiDuBiShou)); hp <= 0 {
+		dmg := spellDamage(g.SK.Skills[SKID_CuiDuBiShou], g.At.Skill[SKID_CuiDuBiShou])
+		if hp := g.Msts[bk].Heal(-dmg); hp <= 0 {
 			g.MstDeath(bk)
 		}
 
@@ -148,13 +176,17 @@ var SkillFunc = map[uint8]func(g *Game){
 		if b >= 100 || bk == -1 {
 			return
 		}
+
+		spell := g.SK.Skills[SKID_ShiBao]
+		lv := g.At.Skill[SKID_ShiBao]
 		g.Corps = append(g.Corps[:bk], g.Corps[bk+1:]...)
 		x1, x2, y1, y2 := x-2, x+2, y-2, y+2
 		for k, v := range g.Msts {
 			if !(v.X >= x1 && v.X <= x2 && v.Y >= y1 && v.Y <= y2) {
 				continue
 			}
-			if hp := v.Heal(-(g.At.Damage * SKDMG_ShiBao)); hp <= 0 {
+			dmg := spellDamage(spell, lv)
+			if hp := v.Heal(-dmg); hp <= 0 {
 				g.MstDeath(k)
 			}
 		}
@@ -166,7 +198,7 @@ var SkillFunc = map[uint8]func(g *Game){
 		}
 		scr.SetContent(x, y, '%', nil, global.CorpseStyle)
 		scr.Show()
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(150 * time.Millisecond)
 		for row := y1; row <= y2; row++ {
 			for col := x1; col <= x2; col++ {
 				w := global.IfElse(row >= y-1 && row <= y+1 && col >= x-1 && col <= x+1, '*', '·')
@@ -175,7 +207,7 @@ var SkillFunc = map[uint8]func(g *Game){
 		}
 		scr.SetContent(x, y, '%', nil, global.CorpseStyle)
 		scr.Show()
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(150 * time.Millisecond)
 		for row := y1; row <= y2; row++ {
 			for col := x1; col <= x2; col++ {
 				w := global.IfElse(row == y1 || row == y2 || col == x1 || col == x2, '*', '~')
@@ -183,7 +215,7 @@ var SkillFunc = map[uint8]func(g *Game){
 			}
 		}
 		scr.Show()
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(150 * time.Millisecond)
 		for row := y1; row <= y2; row++ {
 			for col := x1; col <= x2; col++ {
 				scr.SetContent(col, row, '~', nil, g.Style)
@@ -193,17 +225,19 @@ var SkillFunc = map[uint8]func(g *Game){
 	},
 
 	/*
-		        ..  ....  ..
-		     ..              ..
-		   ..                  ..
-		  ..                    ..
-		 ..                      ..
-		..                        ..
-		 ..                      ..
-		  ..                    ..
-		   ..                  ..
-		     ..              ..
-		        ..  ....  ..
+		             ··~·~··
+		        ·~·           ·~·
+		     ·~·                ·~·
+		   ·~·                    ·~·
+		  ·~·                      ·~·
+		 ·~·                        ·~·
+		·~·             +            ·~·
+		 ·~·                        ·~·
+		  ·~·                      ·~·
+		   ·~·                    ·~·
+		     ·~·                ·~·
+		        ·~·           ·~·
+		             ··~·~··
 	*/
 	SKID_FaZhen: func(g *Game) {
 

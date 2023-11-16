@@ -1,6 +1,7 @@
 package creature
 
 import (
+	"necromancer/global"
 	"time"
 
 	"github.com/gdamore/tcell/v2"
@@ -14,11 +15,12 @@ func NewMonster(style tcell.Style, x, y int, name rune, typ int) *Monster {
 	return &Monster{
 		Creature{
 			int(time.Now().UnixMilli()),
-			style, name, typ,
+			style, name, typ, 1,
 			x, y,
 			0, 0,
-			50, 50,
-			5,
+			global.MstAttr[typ].MaxHealth, global.MstAttr[typ].MaxHealth,
+			global.MstAttr[typ].Damage,
+			0,
 		},
 	}
 }
