@@ -103,6 +103,8 @@ func (g *Game) UseSkill(skid uint8) {
 }
 
 func (g *Game) turnSched(tx, ty int) {
+	FaZhenFlash(g)
+
 	if g.At.TurnRound(tx, ty); CanMove(g.Screen, tx, ty) {
 		g.At.Move(tx, ty)
 	}
@@ -190,7 +192,7 @@ func (g *Game) MstDeath(i int) {
 		for _, v := range g.At.Skill {
 			maxLv += v
 		}
-		if maxLv < SKMAXLevel*4 {
+		if maxLv < SKMAXLevel*len(g.SK.Skills) {
 			g.Focus = global.FocusSkillBox
 			g.SK.Select(g, tcell.KeyClear)
 		}

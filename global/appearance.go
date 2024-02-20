@@ -3,19 +3,22 @@ package global
 import "github.com/gdamore/tcell/v2"
 
 const (
-	AsciiHorizon  = ' ' // 地平线
-	AsciiHero     = '@' // 角色
-	AsciiPet      = 'd' // 宠物
-	AsciiHWall    = '-' // 横墙
-	AsciiVWall    = '|' // 竖墙
-	AsciiDoor     = '+' // 门
-	AsciiFloorLow = '.' // 低洼地面
-	AsciiFloor    = '·' // 地面
-	AsciiZombie   = 'Z' // 僵尸
-	AsciiCorpse   = '%' // 尸体
-	AsciiCoin     = '$' // 金币
-	AsciiPotion   = '6' // 治疗药剂
-	AsciiPack     = '&' // 包裹
+	AsciiHorizon  = ' '  // 地平线
+	AsciiHero     = '@'  // 角色
+	AsciiPet      = 'd'  // 宠物
+	AsciiHWall    = '-'  // 横墙
+	AsciiVWall    = '|'  // 竖墙
+	AsciiDoor     = '+'  // 门
+	AsciiFloorLow = '.'  // 低洼地面
+	AsciiFloor    = '·'  // 地板
+	AsciiZombie   = 'Z'  // 僵尸
+	AsciiCorpse   = '%'  // 尸体
+	AsciiCoin     = '$'  // 金币
+	AsciiPotion   = '6'  // 治疗药剂
+	AsciiPack     = '&'  // 包裹
+	AsciiWater    = '~'  // 水
+	AsciiFence    = '\'' // 栅栏
+	AsciiBush     = '#'  // 灌木从，矮树从
 )
 
 // 地图样式
@@ -28,7 +31,7 @@ var MapStyle = map[int]tcell.Style{
 // 角色样式
 var CptStyle = map[int]tcell.Style{
 	CptHero: tcell.StyleDefault.Background(tcell.ColorDefault).Foreground(tcell.Color199),
-	CptPet:  tcell.StyleDefault.Background(tcell.ColorDefault).Foreground(tcell.Color251),
+	CptPet:  tcell.StyleDefault.Background(tcell.ColorDefault).Foreground(tcell.Color140),
 }
 
 // 怪物样式

@@ -3,6 +3,8 @@ package game
 import (
 	"math"
 	"necromancer/global"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gdamore/tcell/v2"
@@ -19,30 +21,33 @@ const (
 
 type Spell struct {
 	Id       uint8
-	Name     string
-	Cast     int
-	Dice     int
-	HighCast int
-	HighDice int
+	Name     string // 法术
+	Cast     int    // 骰子数
+	Dice     int    // 骰子面数
+	HighCast int    // 升环施法加成 骰子数
+	HighDice int    // 升环施法加成 骰子面数
+	Used     bool   // 是否使用
+	TargetX  int    // 目标坐标x
+	TargetY  int    // 目标坐标y
 }
 
 type Skill struct {
 	Current uint8
-	Skills  map[uint8]Spell
+	Skills  map[uint8]*Spell
 }
 
 func NewSkill() Skill {
 	return Skill{
 		0,
-		map[uint8]Spell{
-			SKID_CuiDuBiShou: Spell{SKID_CuiDuBiShou, "a. Cui Du Bi Shou (2d10 up 1d10)",
-				2, 10, 1, 10},
-			SKID_ShiBao: Spell{SKID_ShiBao, "s. Shi Bao (8d6 up 2d6)",
-				8, 6, 2, 6},
-			SKID_Temp: Spell{SKID_Temp, "d. Temp",
-				0, 0, 0, 0},
-			SKID_FaZhen: Spell{SKID_FaZhen, "f. Fa Zhen",
-				0, 0, 0, 0},
+		map[uint8]*Spell{
+			SKID_CuiDuBiShou: &Spell{SKID_CuiDuBiShou, "[a]. Cui Du Bi Shou (2d10 up 1d10)",
+				2, 10, 1, 10, false, 0, 0},
+			SKID_ShiBao: &Spell{SKID_ShiBao, "[s]. Shi Bao (8d6 up 2d6)",
+				8, 6, 2, 6, false, 0, 0},
+			SKID_Temp: &Spell{SKID_Temp, "[d]. Temp",
+				0, 0, 0, 0, false, 0, 0},
+			SKID_FaZhen: &Spell{SKID_FaZhen, "[f]. Fa Zhen (1d4 up 2d4)",
+				1, 4, 2, 4, false, 0, 0},
 		},
 	}
 }
@@ -80,13 +85,24 @@ func (s *Skill) SelectAnime(g *Game) {
 	x2, y2 := x1*2, y1+len(s.Skills)+1 //y1*2
 	g.DrawBox(x1, y1, x2, y2, "")
 	for k, v := range s.Skills {
-		style := global.IfElse(s.Current == k, tcell.StyleDefault.Background(tcell.ColorReset).Foreground(tcell.Color202), g.Style)
-		g.DrawText(x1+1, y1+int(k), v.Name, style)
+		style := g.Style
+		if g.At.Skill[k] == SKMAXLevel {
+			style = tcell.StyleDefault.Background(tcell.ColorReset).Foreground(tcell.Color245)
+		}
+		if s.Current == k {
+			style = tcell.StyleDefault.Background(tcell.ColorReset).Foreground(tcell.Color202)
+		}
+		name := strings.Builder{}
+		name.WriteString(" ")
+		name.WriteString(strconv.Itoa(g.At.Skill[k]))
+		name.WriteString(" - ")
+		name.WriteString(v.Name)
+		g.DrawText(x1+1, y1+int(k), name.String(), style)
 	}
 	g.Screen.Show()
 }
 
-func spellDamage(spell Spell, lv int) int {
+func spellDamage(spell *Spell, lv int) int {
 	ar := global.AttackRoll()
 	if ar == 1 {
 		return 0
@@ -176,10 +192,12 @@ var SkillFunc = map[uint8]func(g *Game){
 		if b >= 100 || bk == -1 {
 			return
 		}
+		g.Corps = append(g.Corps[:bk], g.Corps[bk+1:]...)
 
 		spell := g.SK.Skills[SKID_ShiBao]
+		// spell.Used, spell.TargetX, spell.TargetY = true, x, y
+
 		lv := g.At.Skill[SKID_ShiBao]
-		g.Corps = append(g.Corps[:bk], g.Corps[bk+1:]...)
 		x1, x2, y1, y2 := x-2, x+2, y-2, y+2
 		for k, v := range g.Msts {
 			if !(v.X >= x1 && v.X <= x2 && v.Y >= y1 && v.Y <= y2) {
@@ -224,22 +242,92 @@ var SkillFunc = map[uint8]func(g *Game){
 		scr.Show()
 	},
 
+	SKID_Temp: func(g *Game) {},
+
 	/*
-		             ··~·~··
-		        ·~·           ·~·
-		     ·~·                ·~·
-		   ·~·                    ·~·
-		  ·~·                      ·~·
-		 ·~·                        ·~·
-		·~·             +            ·~·
-		 ·~·                        ·~·
-		  ·~·                      ·~·
-		   ·~·                    ·~·
-		     ·~·                ·~·
-		        ·~·           ·~·
-		             ··~·~··
+		~.~'~.~'~.~'~.~'~.~'~.~
+		'       .       .       '
+		~    .             .    ~
+		.           .           .
+		~                       ~
+		'                       '
+		~     .     #     .     ~
+		.                       .
+		~                       ~
+		'           .           '
+		~    .             .    ~
+		.       .       .       .
+		~.~'~.~'~.~'~.~'~.~'~.~
 	*/
 	SKID_FaZhen: func(g *Game) {
+		if len(g.Msts) == 0 {
+			return
+		}
+		var (
+			tx, ty int         // 目标点
+			b, bk  = 100.0, -1 // 距离， 怪堆下标
+		)
+		for k, v := range g.Msts {
+			a := math.Abs(float64(v.X)-float64(g.At.X)) + math.Abs(float64(v.Y)-float64(g.At.Y))
+			if a < b {
+				b, bk = a, k
+				tx, ty = v.X, v.Y
+			}
+		}
+		if b >= 100 || bk == -1 {
+			return
+		}
 
+		spell := g.SK.Skills[SKID_FaZhen]
+		spell.Used, spell.TargetX, spell.TargetY = true, tx, ty
+
+		FaZhenFlash(g)
+		DrawFaZhen(g)
 	},
+}
+
+func FaZhenFlash(g *Game) {
+	lv := g.At.Skill[SKID_FaZhen]
+	if lv < 1 {
+		return
+	}
+	spell := g.SK.Skills[SKID_FaZhen]
+	if !spell.Used {
+		return
+	}
+	tx, ty := spell.TargetX, spell.TargetY
+	x1, x2, y1, y2 := tx-12, tx+12, ty-6, ty+6
+	for k, v := range g.Msts {
+		if !(v.X >= x1 && v.X <= x2 && v.Y >= y1 && v.Y <= y2) {
+			continue
+		}
+
+		dmg := spellDamage(spell, lv)
+		if hp := v.Heal(-dmg); hp <= 0 {
+			g.MstDeath(k)
+		}
+	}
+}
+
+func DrawFaZhen(g *Game) {
+	spell := g.SK.Skills[SKID_FaZhen]
+	if !spell.Used {
+		return
+	}
+	offsetX := spell.TargetX - 12
+	colorStyle := tcell.StyleDefault.Background(tcell.ColorDefault).Foreground(tcell.Color124)
+	g.DrawText(offsetX, spell.TargetY-6, " ~.~'~.~'~.~'~.~'~.~'~.~ ", colorStyle)
+	g.DrawText(offsetX, spell.TargetY-5, "'       .       .       '", colorStyle)
+	g.DrawText(offsetX, spell.TargetY-4, "~    .             .    ~", colorStyle)
+	g.DrawText(offsetX, spell.TargetY-3, ".           .           .", colorStyle)
+	g.DrawText(offsetX, spell.TargetY-2, "~                       ~", colorStyle)
+	g.DrawText(offsetX, spell.TargetY-1, "'                       '", colorStyle)
+	g.DrawText(offsetX, spell.TargetY, "~     .     #     .     ~", colorStyle)
+	g.DrawText(offsetX, spell.TargetY+1, ".                       .", colorStyle)
+	g.DrawText(offsetX, spell.TargetY+2, "~                       ~", colorStyle)
+	g.DrawText(offsetX, spell.TargetY+3, "'           .           '", colorStyle)
+	g.DrawText(offsetX, spell.TargetY+4, "~    .             .    ~", colorStyle)
+	g.DrawText(offsetX, spell.TargetY+5, ".       .       .       .", colorStyle)
+	g.DrawText(offsetX, spell.TargetY+6, " ~.~'~.~'~.~'~.~'~.~'~.~ ", colorStyle)
+	g.Screen.Show()
 }

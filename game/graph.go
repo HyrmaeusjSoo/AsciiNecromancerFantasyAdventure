@@ -9,6 +9,9 @@ import (
 
 func (g *Game) Graph() {
 	g.Screen.Clear()
+
+	DrawFaZhen(g)
+
 	g.StateBox()
 
 	// g.House.Draw(g.Screen)
@@ -49,11 +52,11 @@ func (g *Game) StateBox() {
 	at.WriteString("  $")
 	at.WriteString(strconv.Itoa(g.At.Coins))
 	at.WriteString(" #")
+	at.WriteString(strconv.Itoa(int(g.At.Level)))
+	at.WriteString("/")
 	at.WriteString(strconv.Itoa(g.At.Exp))
 	at.WriteString("/")
 	at.WriteString(strconv.Itoa(g.At.MaxExp))
-	at.WriteString("/")
-	at.WriteString(strconv.Itoa(int(g.At.Level)))
 	g.DrawText(0, sy-2, at.String(), g.Style)
 	var ms strings.Builder
 	ms.WriteString("M:")
@@ -62,6 +65,11 @@ func (g *Game) StateBox() {
 	ms.WriteString(strconv.Itoa(len(g.Corps)))
 	ms.WriteString(" S:")
 	ms.WriteString(strconv.Itoa(g.Scores))
+	ms.WriteString("   ")
+	spell := g.SK.Skills[SKID_FaZhen]
+	ms.WriteString(strconv.Itoa(spell.TargetX))
+	ms.WriteString("/")
+	ms.WriteString(strconv.Itoa(spell.TargetY))
 	g.DrawText(0, sy-1, ms.String(), g.Style)
 	for k, v := range g.Msts {
 		var mstb strings.Builder
@@ -133,7 +141,7 @@ func (g *Game) DrawText(x, y int, text string, style tcell.Style) {
 	if style == (tcell.Style{}) {
 		style = g.Style
 	}
-	for i := 0; i < len(text); i++ {
-		g.Screen.SetContent(x+i, y, rune(text[i]), nil, style)
+	for k, v := range text {
+		g.Screen.SetContent(x+k, y, v, nil, style)
 	}
 }
