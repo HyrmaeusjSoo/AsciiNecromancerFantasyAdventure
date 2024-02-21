@@ -13,6 +13,5 @@ func main() {
 		}
 	}()
 
-	g.Graph()
-	game.Input(g)
+	g.Start()
 }

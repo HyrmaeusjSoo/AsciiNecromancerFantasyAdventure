@@ -9,12 +9,12 @@ type Attribute struct {
 
 // 预设
 var CptAttr = map[int]Attribute{
-	CptHero: Attribute{100, 100, 10},
-	CptPet:  Attribute{100, 100, 5},
+	CptHero: {100, 100, 10},
+	CptPet:  {100, 100, 5},
 }
 
 var MstAttr = map[int]Attribute{
-	MstZombie: Attribute{50, 40, 5},
+	MstZombie: {50, 40, 5},
 }
 
 var PotionAttr = map[int]int{

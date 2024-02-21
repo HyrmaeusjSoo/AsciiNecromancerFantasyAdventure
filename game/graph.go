@@ -28,6 +28,22 @@ func (g *Game) Graph() {
 	}
 }
 
+func (g *Game) OpeningAnimation() {
+	x, y := g.Screen.Size()
+	x, y = x/2, y/2
+	g.DrawText(x-17, y, "Ascii", tcell.StyleDefault.Background(tcell.Color16).Foreground(tcell.ColorReset))
+	g.DrawText(x-11, y, "Necromancer", tcell.StyleDefault.Background(tcell.ColorReset).Foreground(tcell.Color43))
+	g.DrawText(x+1, y, "F", tcell.StyleDefault.Background(tcell.ColorReset).Foreground(tcell.Color160))
+	g.DrawText(x+2, y, "a", tcell.StyleDefault.Background(tcell.ColorReset).Foreground(tcell.Color208))
+	g.DrawText(x+3, y, "n", tcell.StyleDefault.Background(tcell.ColorReset).Foreground(tcell.Color226))
+	g.DrawText(x+4, y, "t", tcell.StyleDefault.Background(tcell.ColorReset).Foreground(tcell.Color40))
+	g.DrawText(x+5, y, "a", tcell.StyleDefault.Background(tcell.ColorReset).Foreground(tcell.Color45))
+	g.DrawText(x+6, y, "s", tcell.StyleDefault.Background(tcell.ColorReset).Foreground(tcell.Color21))
+	g.DrawText(x+7, y, "y", tcell.StyleDefault.Background(tcell.ColorReset).Foreground(tcell.Color165))
+	g.DrawText(x+9, y, "Adventure", tcell.StyleDefault.Background(tcell.ColorReset).Foreground(tcell.Color199))
+	g.Screen.Show()
+}
+
 func (g *Game) StateBox() {
 	sx, sy := g.Screen.Size()
 	for i := 0; i < sx; i++ {

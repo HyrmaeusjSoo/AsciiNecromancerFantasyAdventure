@@ -40,13 +40,13 @@ func NewSkill() Skill {
 	return Skill{
 		0,
 		map[uint8]*Spell{
-			SKID_CuiDuBiShou: &Spell{SKID_CuiDuBiShou, "[a]. Cui Du Bi Shou (2d10 up 1d10)",
+			SKID_CuiDuBiShou: {SKID_CuiDuBiShou, "[a]. Cui Du Bi Shou (2d10 up 1d10)",
 				2, 10, 1, 10, false, 0, 0},
-			SKID_ShiBao: &Spell{SKID_ShiBao, "[s]. Shi Bao (8d6 up 2d6)",
+			SKID_ShiBao: {SKID_ShiBao, "[s]. Shi Bao (8d6 up 2d6)",
 				8, 6, 2, 6, false, 0, 0},
-			SKID_Temp: &Spell{SKID_Temp, "[d]. Temp",
+			SKID_Temp: {SKID_Temp, "[d]. Temp",
 				0, 0, 0, 0, false, 0, 0},
-			SKID_FaZhen: &Spell{SKID_FaZhen, "[f]. Fa Zhen (1d4 up 2d4)",
+			SKID_FaZhen: {SKID_FaZhen, "[f]. Fa Zhen (1d4 up 2d4)",
 				1, 4, 2, 4, false, 0, 0},
 		},
 	}

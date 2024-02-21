@@ -61,6 +61,12 @@ func NewGame() *Game {
 	return &game
 }
 
+func (g *Game) Start() {
+	g.OpeningAnimation()
+	// g.Graph()
+	Input(g)
+}
+
 func (g *Game) Turn(act tcell.Key) {
 	if g.Focus == global.FocusPlay {
 		tx, ty := g.At.X, g.At.Y
