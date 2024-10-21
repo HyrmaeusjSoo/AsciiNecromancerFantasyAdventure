@@ -30,7 +30,7 @@ func (g *Game) Graph() {
 
 func (g *Game) OpeningAnimation() {
 	x, y := g.Screen.Size()
-	x, y = x/2, y/2
+	x, y = x/2, y/2-2
 	g.DrawText(x-17, y, "Ascii", tcell.StyleDefault.Background(tcell.Color16).Foreground(tcell.ColorReset))
 	g.DrawText(x-11, y, "Necromancer", tcell.StyleDefault.Background(tcell.ColorReset).Foreground(tcell.Color43))
 	g.DrawText(x+1, y, "F", tcell.StyleDefault.Background(tcell.ColorReset).Foreground(tcell.Color160))
@@ -41,6 +41,7 @@ func (g *Game) OpeningAnimation() {
 	g.DrawText(x+6, y, "s", tcell.StyleDefault.Background(tcell.ColorReset).Foreground(tcell.Color21))
 	g.DrawText(x+7, y, "y", tcell.StyleDefault.Background(tcell.ColorReset).Foreground(tcell.Color165))
 	g.DrawText(x+9, y, "Adventure", tcell.StyleDefault.Background(tcell.ColorReset).Foreground(tcell.Color199))
+	g.DrawText(x-8, y+2, "[press any key]", tcell.StyleDefault.Background(tcell.ColorReset).Foreground(tcell.Color245))
 	g.Screen.Show()
 }
 
@@ -50,13 +51,14 @@ func (g *Game) StateBox() {
 		g.Screen.SetContent(i, sy-3, tcell.RuneHLine, nil, g.Style)
 	}
 	var at strings.Builder
-	at.WriteString("@")
+	at.WriteString("@(")
 	at.WriteString(strconv.Itoa(g.At.Health))
 	if g.At.LastAttacked != 0 {
 		at.WriteString(strconv.Itoa(g.At.LastAttacked))
 	}
-	at.WriteString("/")
+	at.WriteRune('/')
 	at.WriteString(strconv.Itoa(g.At.Max))
+	at.WriteRune(')')
 	at.WriteString(" A")
 	at.WriteString(strconv.Itoa(g.At.Skill[SKID_CuiDuBiShou]))
 	at.WriteString(" S")
@@ -67,12 +69,13 @@ func (g *Game) StateBox() {
 	at.WriteString(strconv.Itoa(g.At.Skill[SKID_FaZhen]))
 	at.WriteString("  $")
 	at.WriteString(strconv.Itoa(g.At.Coins))
-	at.WriteString(" #")
+	at.WriteString(" #(")
 	at.WriteString(strconv.Itoa(int(g.At.Level)))
 	at.WriteString("/")
 	at.WriteString(strconv.Itoa(g.At.Exp))
 	at.WriteString("/")
 	at.WriteString(strconv.Itoa(g.At.MaxExp))
+	at.WriteRune(')')
 	g.DrawText(0, sy-2, at.String(), g.Style)
 	var ms strings.Builder
 	ms.WriteString("M:")

@@ -1,8 +1,6 @@
 package main
 
-import (
-	"necromancer/game"
-)
+import "necromancer/game"
 
 func main() {
 	g := game.NewGame()

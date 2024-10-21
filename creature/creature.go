@@ -63,14 +63,7 @@ func (c *Creature) TurnRound(x, y int) (tx, ty int, canMove bool) {
 
 func (c *Creature) HitDamage() int {
 	n := int(math.Ceil(float64(c.Level) / 2))
-	ar := global.AttackRoll()
-	if ar == 1 {
-		return 0
-	}
-	if ar == 20 {
-		n *= 2
-	}
-	return global.Roll(n, c.Damage)
+	return global.LaunchAttack(n, c.Damage)
 }
 
 func (c *Creature) Heal(v int) int {

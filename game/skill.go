@@ -40,13 +40,13 @@ func NewSkill() Skill {
 	return Skill{
 		0,
 		map[uint8]*Spell{
-			SKID_CuiDuBiShou: {SKID_CuiDuBiShou, "[a]. Cui Du Bi Shou (2d10 up 1d10)",
+			SKID_CuiDuBiShou: {SKID_CuiDuBiShou, "[a]. CuiDuBiShou (2d10 +1d10)",
 				2, 10, 1, 10, false, 0, 0},
-			SKID_ShiBao: {SKID_ShiBao, "[s]. Shi Bao (8d6 up 2d6)",
+			SKID_ShiBao: {SKID_ShiBao, "[s]. ShiBao (8d6 +2d6)",
 				8, 6, 2, 6, false, 0, 0},
 			SKID_Temp: {SKID_Temp, "[d]. Temp",
 				0, 0, 0, 0, false, 0, 0},
-			SKID_FaZhen: {SKID_FaZhen, "[f]. Fa Zhen (1d4 up 2d4)",
+			SKID_FaZhen: {SKID_FaZhen, "[f]. FaZhen (1d4 +2d4)",
 				1, 4, 2, 4, false, 0, 0},
 		},
 	}
@@ -55,9 +55,9 @@ func NewSkill() Skill {
 func (s *Skill) Select(g *Game, key tcell.Key) {
 	showAnime := true
 	switch key {
-	case tcell.KeyUp:
+	case tcell.KeyUp, 'k':
 		s.Current = global.IfElse(s.Current <= 1, uint8(len(s.Skills)), s.Current-1)
-	case tcell.KeyDown:
+	case tcell.KeyDown, 'j':
 		s.Current = global.IfElse(s.Current >= uint8(len(s.Skills)), 1, s.Current+1)
 	case tcell.KeyClear:
 		s.Current = 1
@@ -103,14 +103,7 @@ func (s *Skill) SelectAnime(g *Game) {
 }
 
 func spellDamage(spell *Spell, lv int) int {
-	ar := global.AttackRoll()
-	if ar == 1 {
-		return 0
-	}
-	if ar == 20 {
-		spell.Cast *= 2
-	}
-	dmg := global.Roll(spell.Cast, spell.Dice)
+	dmg := global.LaunchAttack(spell.Cast, spell.Dice)
 	dmg += global.Roll((lv-1)*spell.HighCast, spell.HighDice)
 	return dmg
 }

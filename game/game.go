@@ -25,6 +25,7 @@ type Game struct {
 	Treasures []treasure.Treasure
 }
 
+// 初始化Game对象
 func InitGameObject(x, y int) (g Game) {
 	msts := []*creature.Monster{
 		creature.NewMonster(global.MstStyle[global.MstZombie], x-x, y-y, global.AsciiZombie, global.MstZombie),
@@ -41,6 +42,7 @@ func InitGameObject(x, y int) (g Game) {
 	}
 }
 
+// 创建Game
 func NewGame() *Game {
 	defStyle := tcell.StyleDefault.Background(tcell.ColorReset).Foreground(tcell.ColorReset)
 	s, err := tcell.NewScreen()
@@ -61,23 +63,25 @@ func NewGame() *Game {
 	return &game
 }
 
+// 启动
 func (g *Game) Start() {
 	g.OpeningAnimation()
 	// g.Graph()
 	Input(g)
 }
 
+// 回合
 func (g *Game) Turn(act tcell.Key) {
 	if g.Focus == global.FocusPlay {
 		tx, ty := g.At.X, g.At.Y
 		switch act {
-		case tcell.KeyUp:
+		case tcell.KeyUp, 'k':
 			ty--
-		case tcell.KeyDown:
+		case tcell.KeyDown, 'j':
 			ty++
-		case tcell.KeyLeft:
+		case tcell.KeyLeft, 'h':
 			tx--
-		case tcell.KeyRight:
+		case tcell.KeyRight, 'l':
 			tx++
 		default:
 			if act == 'a' {
@@ -102,12 +106,14 @@ func (g *Game) Turn(act tcell.Key) {
 	}
 }
 
+// 使用技能
 func (g *Game) UseSkill(skid uint8) {
 	if g.At.Skill[skid] > 0 {
 		SkillFunc[skid](g)
 	}
 }
 
+// 回合调度
 func (g *Game) turnSched(tx, ty int) {
 	FaZhenFlash(g)
 
@@ -162,12 +168,6 @@ func (g *Game) turnSched(tx, ty int) {
 	}
 }
 
-/*
-s(0x, ny)
-s(mx, ny)
-s(0y, nx)
-s(my, nx)
-*/
 func (g *Game) GenerateMst() {
 	mx, my := g.Screen.Size()
 	mx, my = mx-1, my-4

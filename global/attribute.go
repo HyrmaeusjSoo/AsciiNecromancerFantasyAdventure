@@ -14,7 +14,7 @@ var CptAttr = map[int]Attribute{
 }
 
 var MstAttr = map[int]Attribute{
-	MstZombie: {50, 40, 5},
+	MstZombie: {50, 40, 6},
 }
 
 var PotionAttr = map[int]int{
